@@ -1,4 +1,4 @@
-const mysql = require("mysql")
+
 
 const pg = require('pg')
 
@@ -20,7 +20,7 @@ const db = mysql.createConnection({
   });
 */
   //connect
-
+ 
 
   process.on('exit', () => {
     db.end();
