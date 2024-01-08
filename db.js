@@ -1,5 +1,16 @@
 const mysql = require("mysql")
 
+const pg = require('pg')
+
+const { Pool } = pg;
+const mysql = require("mysql")
+
+
+const db = new Pool({
+  connectionString: process.env.POSTGRES_URL + "?sslmode=require"
+})
+
+/*
 const db = mysql.createConnection({
     host: "localhost",
     port: 3306,
@@ -7,7 +18,7 @@ const db = mysql.createConnection({
     password: "159159",
     database: "nodemysql"
   });
-  
+*/
   //connect
   db.connect((err)=>{
     if(err){
@@ -16,5 +27,11 @@ const db = mysql.createConnection({
     }
     console.log("Connected to mysql");
   });
+
+  process.on('exit', () => {
+    db.end();
+  });
+
+
   
 module.exports = db;
