@@ -92,6 +92,9 @@ app.get('/changeReviewTable',(req,res)=>{
 
 })
 
+app.get("/",(req,res)=>{
+  res.send("DEPLOYED")
+})
 app.use(
   cors({
   origin:'*'
