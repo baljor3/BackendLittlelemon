@@ -19,7 +19,10 @@ app.get('/createdb',(req, res )=>{
 
 // create table
 app.get('/createlogintable', (req,res)=>{
-  let sql = 'CREATE TABLE login(id int AUTO_INCREMENT, username VARCHAR(255), email VARCHAR(255) ,password VARCHAR(255), PRIMARY KEY (id))';
+  let sql = `CREATE TABLE login( ID  SERIAL PRIMARY KEY,
+     username VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL ,
+    password VARCHAR(255) NOT NULL)`;
   db.query(sql, (err,result)=>{
     if(err){
       throw err;
@@ -31,7 +34,11 @@ app.get('/createlogintable', (req,res)=>{
 
 //create cart
 app.get('/createCart',(req,res)=>{
-  let sql = 'CREATE TABLE cart(orderid int AUTO_INCREMENT, userid int, productid int, PRIMARY KEY (orderid), FOREIGN KEY (userid) REFERENCES login(id), FOREIGN KEY (productid) REFERENCES product(productid))'
+  let sql = `CREATE TABLE cart(orderid int AUTO_INCREMENT,
+    userid int, productid int,
+    PRIMARY KEY (orderid),
+    FOREIGN KEY (userid) REFERENCES login(id),
+    FOREIGN KEY (productid) REFERENCES product(productid))`
 
     db.query(sql, (err,result)=>{
       if(err){
@@ -44,7 +51,10 @@ app.get('/createCart',(req,res)=>{
 
 //create product
 app.get('/createProduct',(req,res)=>{
-  let sql = 'CREATE TABLE product(productid int AUTO_INCREMENT, name VARCHAR(255), Description TEXT, price double(3,2), PRIMARY KEY(productid))'
+  let sql = `CREATE TABLE product(productid SERIAL PRIMARY KEY,
+     name VARCHAR(255) NOT NULL,
+     Description TEXT NOT NULL,
+     price double(3,2) NOT NULL,)`
   db.query(sql, (err,result)=>{
     if(err){
       throw err;
@@ -101,7 +111,7 @@ app.use(
 }));
 
 const DatesRouter = require("./src");
-const { EncryptionFilterSensitiveLog } = require("@aws-sdk/client-s3");
+
 
 
 app.use(express.json());
