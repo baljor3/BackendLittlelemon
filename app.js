@@ -51,7 +51,7 @@ app.get('/createCart',(req,res)=>{
 
 //create product
 app.get('/createProduct',(req,res)=>{
-  let sql = `CREATE TABLE product(productid SERIAL PRIMARY KEY,
+  let sql = `CREATE TABLE product(productid int SERIAL PRIMARY KEY,
      name VARCHAR(255) NOT NULL,
      Description TEXT NOT NULL,
      price double(3,2) NOT NULL,)`
