@@ -42,7 +42,7 @@ router.post("/saveDates",(req,res)=>{
 
 router.post('/logininsert', (req, res) => {
   const { username, email,password } = req.body;
-  const sql = 'INSERT INTO login (username, email,password) VALUES (?, ?,?)';
+  const sql = 'INSERT INTO login (username, email,password) VALUES ($1, $2,$3)';
   const values = [username, email,password];
 
   db.query(sql, values, (err, result) => {
