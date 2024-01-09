@@ -34,9 +34,9 @@ app.get('/createlogintable', (req,res)=>{
 
 //create cart
 app.get('/createCart',(req,res)=>{
-  let sql = `CREATE TABLE cart(orderid int AUTO_INCREMENT,
-    userid int, productid int,
-    PRIMARY KEY (orderid),
+  let sql = `CREATE TABLE cart(
+    userid int,
+    productid int,
     FOREIGN KEY (userid) REFERENCES login(id),
     FOREIGN KEY (productid) REFERENCES product(productid))`
 
@@ -51,10 +51,11 @@ app.get('/createCart',(req,res)=>{
 
 //create product
 app.get('/createProduct',(req,res)=>{
-  let sql = `CREATE TABLE product(productid int SERIAL PRIMARY KEY,
+  let sql = `CREATE TABLE product(
+    productid SERIAL PRIMARY KEY,
      name VARCHAR(255) NOT NULL,
      Description TEXT NOT NULL,
-     price double(3,2) NOT NULL,)`
+     price numeric(3,2) NOT NULL)`
   db.query(sql, (err,result)=>{
     if(err){
       throw err;
@@ -80,7 +81,13 @@ INSERT INTO nodemysql.product(name,Description,price) VALUES
 ("LemonDessert", "This comes straight from grandma’s recipe book, every last ingredient has been sourced and is as authentic as can be imagined.",8);
 */
 app.get('/createReview',(req,res)=>{
-  let sql = 'CREATE TABLE review(reviewid int AUTO_INCREMENT, rating int ,username VARCHAR(255),userid int, productid int, Description TEXT,FOREIGN KEY (userid) REFERENCES login(id), FOREIGN KEY (productid) REFERENCES product(productid), PRIMARY KEY(reviewid))'
+  let sql = `CREATE TABLE review(
+    rating int ,
+    username VARCHAR(255)
+    ,userid int, productid int, 
+    Description TEXT,
+    FOREIGN KEY (userid) REFERENCES login(id), 
+    FOREIGN KEY (productid) REFERENCES product(productid) )`
   db.query(sql, (err,result)=>{
     if(err){
       throw err;

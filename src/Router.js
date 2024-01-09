@@ -48,7 +48,7 @@ router.post('/logininsert', (req, res) => {
   db.query(sql, values, (err, result) => {
     if (err) {
       console.error('Error inserting login data:', err);
-      res.status(500).json({ error: 'An error occurred' });
+      res.status(500).json({ error: err });
     } else {
       res.status(201).json({ message: 'Login data inserted successfully' });
     }
@@ -56,7 +56,7 @@ router.post('/logininsert', (req, res) => {
 });
 
 router.post('/login',(req,res)=>{
-    
+
     const {username , password} = req.body;
     const sql = 'SELECT * FROM login WHERE username = ? AND password = ?'
     const values = [username,password];
