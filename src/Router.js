@@ -58,7 +58,7 @@ router.post('/logininsert', (req, res) => {
 router.post('/login',(req,res)=>{
 
     const {username , password} = req.body;
-    const sql = 'SELECT * FROM login WHERE username = ? AND password = ?'
+    const sql = 'SELECT * FROM login WHERE username = $1 AND password = $2'
     const values = [username,password];
 
 
@@ -96,7 +96,7 @@ router.post('/additem',(req,res)=>{
     }
 
     const {productid} = req.body
-    const sql = 'INSERT INTO cart(userid, productid) VALUES (?, ?)'
+    const sql = 'INSERT INTO cart(userid, productid) VALUES ($1, $2)'
 
     const values = [IdorNot,productid]
     
@@ -121,7 +121,7 @@ router.post('/deleteitem',(req,res)=>{
     const {productid} = req.body
     const values = [IdorNot, productid]
 
-    const sql = 'DELETE FROM cart where cart.userid = ? and cart.productid = ? LIMIT 1'
+    const sql = 'DELETE FROM cart where cart.userid = $1 and cart.productid = $2 LIMIT 1'
 
 
     db.query(sql, values, (err,result)=>{
@@ -151,7 +151,7 @@ router.get('/getCart',(req,res)=>{
     }catch(err){
         return res.status(401).json({err:err.message})
     }
-   const sql = 'SELECT cart.productid, product.name, product.price, SUM(product.price) AS total,COUNT(cart.productid) as numberofItems FROM cart JOIN product ON cart.productid = product.productid where userid = ? AND cart.productid IS NOT NULL GROUP BY cart.productid ORDER BY cart.productid'
+   const sql = 'SELECT cart.productid, product.name, product.price, SUM(product.price) AS total,COUNT(cart.productid) as numberofItems FROM cart JOIN product ON cart.productid = product.productid where userid = $1 AND cart.productid IS NOT NULL GROUP BY cart.productid ORDER BY cart.productid'
 
    db.query(sql, IdorNot,(err,result)=>{
     if(err){
@@ -179,7 +179,7 @@ router.get('/getTopReviews',(req,res)=>{
 router.post('/getReviews',(req,res)=>{
     const {productid} = req.body;
 
-    let sql = "SELECT rating, username, productid, description FROM review where productid = ?"
+    let sql = "SELECT rating, username, productid, description FROM review where productid = $1"
 
     db.query(sql,productid,(err,result)=>{
         if(err){
@@ -206,7 +206,7 @@ router.post('/writeReview',async (req,res)=>{
     const {rating, description, productid} = req.body
     const values = [IdorNot , username, rating , description , productid]
     
-    const sql = 'INSERT INTO review(userid, username, rating, description, productid ) VAlUES (? , ? , ? , ? , ?)'
+    const sql = 'INSERT INTO review(userid, username, rating, description, productid ) VAlUES ($1 , $2 , $3 , $4 , $5)'
 
     
     db.query(sql, values, (err, result)=>{
@@ -235,7 +235,7 @@ router.get("/getCookies",(req,res)=>{
 
 function getUserName(id){
     return new Promise((resolve, reject) => {
-        const sql = 'SELECT username FROM login WHERE id = ?';
+        const sql = 'SELECT username FROM login WHERE id = $1';
         db.query(sql, id, (err, result) => {
             if (err) {
                 reject(new Error('Query failed'));
