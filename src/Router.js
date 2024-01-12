@@ -48,28 +48,31 @@ router.post('/logininsert', (req, res) => {
   db.query(sql, values, (err, result) => {
     if (err) {
       console.error('Error inserting login data:', err);
-      res.status(500).json({ error: err });
+      res.status(500).json({ error: 'An error occurred' });
     } else {
       res.status(201).json({ message: 'Login data inserted successfully' });
     }
   });
 });
 
-router.post('/login',(req,res)=>{
+router.post('/login', (req,res)=>{
 
     const {username , password} = req.body;
     const sql = 'SELECT * FROM login WHERE username = $1 AND password = $2'
     const values = [username,password];
+
+    console.log(values)
 
 
     db.query(sql, values, (err,result)=>{
         if(err){
             res.status(500).json({error:"Query failed"})
         }else {
-            if (result && result.length > 0) {
-              const user = result[0]; 
+            console.log(result.rows)
+            if (result.rows && result.rows.length > 0) {
+              const user = result.rows[0];
             jwt.sign(
-                { id: user.id }, 
+                { id: user.id },
                 'secretKey',
                 { expiresIn: '1h' },
                 (err, token) => {
@@ -97,10 +100,7 @@ router.post('/additem',(req,res)=>{
 
     const {productid} = req.body
     const sql = 'INSERT INTO cart(userid, productid) VALUES ($1, $2)'
-
     const values = [IdorNot,productid]
-    
-
 
     db.query(sql,values,(err,result)=>{
         if(err){
@@ -119,16 +119,27 @@ router.post('/deleteitem',(req,res)=>{
     }
 
     const {productid} = req.body
-    const values = [IdorNot, productid]
+    const values = [productid,IdorNot ]
 
-    const sql = 'DELETE FROM cart where cart.userid = $1 and cart.productid = $2 LIMIT 1'
-
-
+    const sql = `WITH rows AS (
+        SELECT
+          orderid,
+       productid
+        FROM
+          cart
+          where productid =$1 and userid = $2
+        LIMIT 1
+      )
+      delete from cart
+      where (orderid,productid) in (select orderid,productid from rows)`
+        console.log("here")
     db.query(sql, values, (err,result)=>{
         if(err){
+            console.log(err);
             res.status(500).json({error:"Query failed"})
         }else{
-            res.status(200).json({message:"values inserted"})
+            console.log(result.rows)
+            res.status(200).json({message:"values deleted"})
         }
     })
 
@@ -141,23 +152,43 @@ router.get('/getProducts',(req,res)=>{
         if(err){
             res.status(500).json({error:"Query failed"})
         }else{
-            res.send(result)
+            res.send(result.rows)
         }
     })
 })
+
+router.get('/getProducts/:id',(req,res)=>{
+
+    const productId = req.params.id; // Retrieve the product ID from the request parameters
+
+    // Use placeholders in the SQL query to prevent SQL injection
+    let sql = "SELECT * FROM product WHERE productid = $1";
+
+    db.query(sql, [productId], (err, result) => {
+        if (err) {
+            console.error("Query failed:", err);
+            res.status(500).json({ error: "Query failed" });
+        } else {
+            res.json(result.rows);
+        }
+    });
+})
+
 router.get('/getCart',(req,res)=>{
     try{
         var IdorNot = getUserID(req.headers.token)
     }catch(err){
         return res.status(401).json({err:err.message})
     }
-   const sql = 'SELECT cart.productid, product.name, product.price, SUM(product.price) AS total,COUNT(cart.productid) as numberofItems FROM cart JOIN product ON cart.productid = product.productid where userid = $1 AND cart.productid IS NOT NULL GROUP BY cart.productid ORDER BY cart.productid'
-
-   db.query(sql, IdorNot,(err,result)=>{
+   const sql = `SELECT cart.productid, SUM(product.price) AS total,
+   COUNT(cart.productid) as numberofItems
+   FROM cart JOIN product ON cart.productid = product.productid
+   where userid = $1 AND cart.productid IS NOT NULL GROUP BY cart.productid ORDER BY cart.productid`
+   db.query(sql, [IdorNot],(err,result)=>{
     if(err){
-        res.status(500).json({error:"Query failed"})
+        res.status(500).json({error: err})
     }else{
-        res.send(result)
+        res.send(result.rows)
     }
    })
 })
@@ -169,7 +200,7 @@ router.get('/getTopReviews',(req,res)=>{
         if(err){
             res.status(500).json({error:"Query failed"})
         }else{
-            res.send(result)
+            res.send(result.rows)
         }
     })
 
@@ -181,18 +212,18 @@ router.post('/getReviews',(req,res)=>{
 
     let sql = "SELECT rating, username, productid, description FROM review where productid = $1"
 
-    db.query(sql,productid,(err,result)=>{
+    db.query(sql,[productid],(err,result)=>{
         if(err){
             console.log(err)
             res.status(500).json({error:"Query failed"})
         }else{
-            console.log(result)
-            res.send(result)
+            
+            res.send(result.rows)
         }
     })
 })
 
-router.post('/writeReview',async (req,res)=>{
+router.post('/writeReview', async(req,res)=>{
    
 
     try{
@@ -202,12 +233,14 @@ router.post('/writeReview',async (req,res)=>{
     }
     
     
-    const username = await getUserName(IdorNot)
+    const username =  await getUserName(IdorNot)
     const {rating, description, productid} = req.body
     const values = [IdorNot , username, rating , description , productid]
     
-    const sql = 'INSERT INTO review(userid, username, rating, description, productid ) VAlUES ($1 , $2 , $3 , $4 , $5)'
-
+    const sql = `INSERT INTO review(userid, username, rating, description, productid )
+     VAlUES ($1 , $2 , $3 , $4 , $5)`
+     console.log(req.body)
+    console.log(values)
     
     db.query(sql, values, (err, result)=>{
         if(err){
@@ -236,11 +269,11 @@ router.get("/getCookies",(req,res)=>{
 function getUserName(id){
     return new Promise((resolve, reject) => {
         const sql = 'SELECT username FROM login WHERE id = $1';
-        db.query(sql, id, (err, result) => {
+        db.query(sql, [id], (err, result) => {
             if (err) {
                 reject(new Error('Query failed'));
             } else {
-                resolve(result[0].username);
+                resolve(result.rows[0].username);
             }
         });
     });
