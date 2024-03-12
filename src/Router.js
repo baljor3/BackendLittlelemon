@@ -4,41 +4,196 @@ const router = express.Router()
 const db = require('../db');
 const jwt  = require('jsonwebtoken');
 const { restart } = require('nodemon');
+const nodemailer = require("nodemailer");
+const { v4: uuidv4 } = require('uuid');
 
-router.get("/getDates",(req,res)=>{
-    try{
-        datecontoller.getDates((err,result)=>{
-            if(err){
-                res.status(400).send("dates object not found")
-            }else{
-                res.status(200).send({status:"Ok",data:result})
-            }
-        })
-    }catch(err){
-        res.status(500).send("reload api")
+
+
+
+const transporter = nodemailer.createTransport({
+    host: "smtp-mail.outlook.com",
+    port: 587,
+    secure: false,
+    auth: {
+        user: "littlelemon589@outlook.com", // Use environment variable
+        pass: "Ch159159!", // Use environment variable
+    },
+    tls: {
+        ciphers:'SSLv3'
     }
+});
+
+router.post("/sendMessage", async (req, res) => {
+    //TODO: create an orderid from db
+    try {
+        const { email, items, name } = req.body;
+        console.log(items)
+
+        let itemList = '';
+        let grandtotal = 0;
+        let itemProductList = [];
+
+        // Map the array of items to HTML list items
+        if (items && items.length > 0) {
+
+            items.forEach(item=>{
+                itemProductList.push(item.productid);
+            })
+
+            // Fetch product names from the database
+            let sql = `
+                SELECT name
+                FROM product
+                WHERE productid = ANY($1)
+                order by productid;
+            `;
+            let itemNames = [];
+            db.query(sql, [itemProductList], async (err, result) => {
+                if (err) {
+                    console.log("error in db.query", err);
+                    res.send({ message: "error in fetching data for product names" });
+                } else {
+                    console.log("in result in db.query");
+                    itemNames = result.rows.map(row => row.name);
+                    console.log("Item Names:", itemNames);
+
+                    items.forEach((item, index) => {
+                        item.itemName = itemNames[index]; // Assuming itemNames and items have the same length
+                    });
+
+                    let itemPrices = []
+                    let itemQuantity = []
+                    let itemTotals = []
+                    itemList = `<div style="border-bottom: 1px solid #5C7600">`;
+            items.forEach(item => {
+                itemList += `<div style="display:flex; align-items:center">
+                    <ul style="list-style:none">
+                    <li>
+                    ${item.itemName}
+                    </li>
+                        <li>
+                            Unit Price: $${item.total / item.numberofitems}
+                        </li>
+                        <li>
+                            Total:$${item.total}
+                        </li>
+                        <li>
+                            Units:${item.numberofitems}
+                        </li>
+                    </ul>
+                </div>`;
+                let prices = item.total/item.numberofitems
+                itemPrices.push(prices)
+                itemQuantity.push(item.numberofitems)
+                itemTotals.push(item.total)
+                grandtotal += Number(item.total);
+            });
+            itemList += `</div>`;
+            let randomUUID = uuidv4();
+                    // Construct email HTML with item names
+                    let mailOptions = {
+                        from: 'littlelemon589@outlook.com',
+                        to: email,
+                        subject: 'Order Confirmation',
+                        html: `
+                            <html>
+                            <head>
+                                <style></style>
+                            </head>
+                            <body>
+                                <p>Order Confirm ${uuidv4}</p>
+                                <p style="border-bottom: 1px solid #5C7600"> Thank you for your purchase ${name}!</p>
+                                <p>Order Details:</p>
+                                <div style="display:grid; justify-content:center; align-items: center ">
+                                    <div>${itemList}</div>
+                                    <div>Total:  $${grandtotal}</div>
+                                </div>
+                            </body>
+                            </html>
+                        `,
+                    };
+
+                    // Send email
+                    try {
+                        // Send email
+                        const info = await transporter.sendMail(mailOptions);
+                        console.log(randomUUID);
+                        console.log("items array",randomUUID,itemNames,itemPrices, itemQuantity,itemTotals,grandtotal,grandtotal)
+                        let arrayofItems = [randomUUID,itemNames,itemPrices, itemQuantity,itemTotals,(grandtotal*.12).toFixed(2), grandtotal*.12 + grandtotal]
+                        let sqlorder = `INSERT INTO orders VALUES ($1,$2,$3,$4,$5,$6,$7)`
+
+                         db.query(sqlorder,arrayofItems,(err,result)=>{
+                             if(err){
+                              console.log("error in orders",err)
+                              }else{
+                                console.log("oreder result",result)
+                             }
+                         })
+
+                        // Deleting cart items
+                        var IdorNot = getUserID(req.headers.token);
+                        let sql = `
+                            DELETE FROM cart
+                            WHERE userid = $1
+                        `;
+                        db.query(sql, [IdorNot], (err, result) => {
+                            if (err) {
+                                console.log(err);
+                            } else {
+                                console.log("cart deleted");
+                            }
+                        });
+
+                        // Send response after email is sent
+                        res.send({ message: "message sent" });
+                    } catch (err) {
+                        console.log(err);
+                        res.status(500).send({ error: 'An error occurred while sending the email' });
+                    }
+                }
+            });
+        } else {
+            res.status(400).send({ error: 'No items provided' });
+        }
+    } catch (error) {
+        console.error('Error occurred:', error);
+        res.status(500).send({ error: 'An error occurred while sending the email' });
+    }
+});
+
+
+router.post("/saveDate",(req,res) =>{
+    const {date, time, noguests, occasion, email} = req.body
+    let sql = `insert INTO reservations(date, time,noguests,occasion, email)
+    VALUES ($1,$2,$3,$4,$5)`
+    const values = [date,time,noguests,occasion,email]
+
+    db.query(sql, values, (error,result) =>{
+        if(error){
+            res.send({Err:error})
+        }else{
+            res.send({message:"dates inserted"})
+        }
+
+    })
+})
+
+
+
+router.get("/getDate",(req,res)=>{
+    let sql = "SELECT * FROM reservations"
+
+    db.query(sql,(err,result)=>{
+        if(err){
+            res.send({Err:err})
+        }else{
+            res.send(result.rows)
+        }
+    })
 
 })
 
-router.post("/saveDates",(req,res)=>{
 
-    try{
-
-        const dateDetails = req.body;
-        console.log(req.body);
-
-        datecontoller.saveDatesDetails(dateDetails,(err,results)=>{
-            if(err){
-                res.status(400).send("could not save datesObject")
-            }else{
-                res.status(201).send({status:"OK",data:results})
-            }
-        });
-    }catch(err){
-        res.status(500).send("reload save details")
-    }
-
-});
 
 router.post('/logininsert', (req, res) => {
   const { username, email,password } = req.body;
@@ -217,7 +372,6 @@ router.post('/getReviews',(req,res)=>{
             console.log(err)
             res.status(500).json({error:"Query failed"})
         }else{
-            
             res.send(result.rows)
         }
     })
@@ -266,6 +420,16 @@ router.get("/getCookies",(req,res)=>{
     }
 })
 
+router.get("/getName", async (req,res)=>{
+    try{
+        var IdorNot = getUserID(req.headers.token)
+        }catch(err){
+            return res.status(401).json({err:err.message})
+        }
+    result= await getUserName(IdorNot);    
+    res.send(result)
+})
+
 function getUserName(id){
     return new Promise((resolve, reject) => {
         const sql = 'SELECT username FROM login WHERE id = $1';
@@ -291,3 +455,5 @@ function getUserID(TokenHeader){
     }
 }
 module.exports = router;
+
+

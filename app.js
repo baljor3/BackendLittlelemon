@@ -17,6 +17,43 @@ app.get('/createdb',(req, res )=>{
   console.log("db created")
 })
 
+app.get('/createOrder',(req,res)=>{
+  let sql = `CREATE TABLE orders ( id UUID, 
+    item VARCHAR(255)[], 
+  price NUMERIC[], 
+  Quantity int[], 
+  total NUMERIC[],
+  taxes NUMERIC,
+  grandtotal NUMERIC,
+  order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`
+
+  db.query(sql,(err,result)=>{
+    if(err){
+      throw err;
+    }
+    console.log(result)
+    res.send("order table created")
+  })
+})
+
+app.get('/reservations',(req,res)=>{
+
+  let sql = `CREATE TABLE reservations(
+    date DATE NOT NULL,
+    time VARCHAR(20) NOT NULL,
+    Noguests INT NOT NULL,
+    OCCASION VARCHAR(20) NOT NULL
+  )
+`
+db.query (sql,(err,result) =>{
+  if(err){
+    throw err;
+  }
+  res.send("reservation table made")
+})
+
+})
+
 // create table
 app.get('/createlogintable', (req,res)=>{
   let sql = `CREATE TABLE login( ID  SERIAL PRIMARY KEY,
