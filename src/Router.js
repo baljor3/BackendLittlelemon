@@ -100,7 +100,7 @@ router.post("/sendMessage", async (req, res) => {
                                 <style></style>
                             </head>
                             <body>
-                                <p>Order Confirm ${uuidv4}</p>
+                                <p>Order Confirm ${randomUUID}</p>
                                 <p style="border-bottom: 1px solid #5C7600"> Thank you for your purchase ${name}!</p>
                                 <p>Order Details:</p>
                                 <div style="display:grid; justify-content:center; align-items: center ">
