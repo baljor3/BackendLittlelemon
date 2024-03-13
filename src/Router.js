@@ -1,4 +1,4 @@
-const datecontoller =require('./Controller')
+
 const express = require('express')
 const router = express.Router()
 const db = require('../db');
@@ -15,8 +15,8 @@ const transporter = nodemailer.createTransport({
     port: 587,
     secure: false,
     auth: {
-        user: "littlelemon589@outlook.com", // Use environment variable
-        pass: "Ch159159!", // Use environment variable
+        user: process.env.USEREMAIL, // Use environment variable
+        pass: process.env.EMAILPASS, // Use environment variable
     },
     tls: {
         ciphers:'SSLv3'
