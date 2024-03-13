@@ -1,4 +1,3 @@
-
 const express = require('express')
 const router = express.Router()
 const db = require('../db');
@@ -6,7 +5,7 @@ const jwt  = require('jsonwebtoken');
 const { restart } = require('nodemon');
 const nodemailer = require("nodemailer");
 const { v4: uuidv4 } = require('uuid');
-
+require('dotenv').config();
 
 
 
@@ -426,7 +425,7 @@ router.get("/getName", async (req,res)=>{
         }catch(err){
             return res.status(401).json({err:err.message})
         }
-    result= await getUserName(IdorNot);    
+    result= await getUserName(IdorNot);
     res.send(result)
 })
 
@@ -437,7 +436,8 @@ function getUserName(id){
             if (err) {
                 reject(new Error('Query failed'));
             } else {
-                resolve(result.rows[0].username);
+                console.log(result.rows)
+                resolve(result.rows);
             }
         });
     });
